@@ -11,27 +11,23 @@ app.use(express.json());
 app.use("/customer",session({secret:"fingerprint_customer",resave: true, saveUninitialized: true}))
 
 app.use("/customer/auth/*", function auth(req, res, next) {
-    // Assuming accessToken is stored in session
-    if (req.session && req.session.authorization) {
-        const token = req.session.authorization['accessToken'];
-
-        if (token) {
-            // validate token (jwt.verify if JWT was used)
-            try {
-                const jwt = require("jsonwebtoken");
-                const decoded = jwt.verify(token, "access"); // "access" is the secret from the lab
-                req.user = decoded; // save decoded info in request
-                return next();
-            } catch (err) {
-                return res.status(403).json({ message: "Invalid Token" });
-            }
-        } else {
-            return res.status(401).json({ message: "Access token missing" });
-        }
-    } else {
-        return res.status(401).json({ message: "User not authenticated" });
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      return res.status(403).json({ message: "User not logged in" });
     }
+  
+    const token = authHeader.split(" ")[1]; // Bearer <token>
+    jwt.verify(token, "access", (err, user) => {
+      if (!err) {
+        req.user = user; // attach decoded user info
+        next();
+      } else {
+        return res.status(403).json({ message: "User not authenticated" });
+      }
+    });
 });
+  
+  
  
 const PORT =5000;
 

@@ -68,86 +68,56 @@ public_users.get('/review/:isbn', function (req, res) {
 });
 
 
-// ========== TASKS 10–13: Async Version ==========
+// ========== TASKS 10–13: Async without Axios (backend-only) ==========
 
-// 📌 Task 10: Get book list (using Promise)
-public_users.get('/async/books', function (req, res) {
-  let getBooks = new Promise((resolve, reject) => {
-    if (books) {
-      resolve(books);
-    } else {
-      reject("Books not found");
+// Task 10: Get book list (Promise)
+public_users.get('/async/books', (req, res) => {
+    new Promise((resolve, reject) => {
+      return books ? resolve(books) : reject("Books not found");
+    })
+    .then(data => res.status(200).json(data))
+    .catch(err => res.status(500).json({ message: err }));
+  });
+  
+  // Task 11: Get book details by ISBN (async/await)
+  public_users.get('/async/isbn/:isbn', async (req, res) => {
+    try {
+      const book = await new Promise((resolve, reject) => {
+        const b = books[req.params.isbn];
+        return b ? resolve(b) : reject("Book not found");
+      });
+      res.status(200).json(book);
+    } catch (err) {
+      res.status(404).json({ message: err });
     }
   });
+  
+  // Task 12: Get book details by Author (async/await)
+  public_users.get('/async/author/:author', async (req, res) => {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const list = Object.values(books).filter(b => b.author === req.params.author);
+        return list.length ? resolve(list) : reject("No books found for this author");
+      });
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(404).json({ message: err });
+    }
+  });
+  
+  // Task 13: Get book details by Title (async/await)
+  public_users.get('/async/title/:title', async (req, res) => {
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const list = Object.values(books).filter(b => b.title === req.params.title);
+        return list.length ? resolve(list) : reject("No books found with this title");
+      });
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(404).json({ message: err });
+    }
+  });
+  
 
-  getBooks.then(
-    (result) => res.status(200).json(result),
-    (error) => res.status(500).json({ message: error })
-  );
-});
-
-// 📌 Task 11: Get book details by ISBN (async/await)
-public_users.get('/async/isbn/:isbn', async (req, res) => {
-  try {
-    const isbn = req.params.isbn;
-
-    let getBookByISBN = new Promise((resolve, reject) => {
-      let book = books[isbn];
-      if (book) resolve(book);
-      else reject("Book not found");
-    });
-
-    const book = await getBookByISBN;
-    res.status(200).json(book);
-  } catch (err) {
-    res.status(404).json({ message: err });
-  }
-});
-
-// 📌 Task 12: Get book details by Author (async/await)
-public_users.get('/async/author/:author', async (req, res) => {
-  try {
-    const author = req.params.author;
-
-    let getBooksByAuthor = new Promise((resolve, reject) => {
-      let result = [];
-      for (let key in books) {
-        if (books[key].author === author) {
-          result.push(books[key]);
-        }
-      }
-      if (result.length > 0) resolve(result);
-      else reject("No books found for this author");
-    });
-
-    const result = await getBooksByAuthor;
-    res.status(200).json(result);
-  } catch (err) {
-    res.status(404).json({ message: err });
-  }
-});
-
-// 📌 Task 13: Get book details by Title (async/await)
-public_users.get('/async/title/:title', async (req, res) => {
-  try {
-    const title = req.params.title;
-
-    let getBooksByTitle = new Promise((resolve, reject) => {
-      let result = [];
-      for (let key in books) {
-        if (books[key].title === title) {
-          result.push(books[key]);
-        }
-      }
-      if (result.length > 0) resolve(result);
-      else reject("No books found with this title");
-    });
-
-    const result = await getBooksByTitle;
-    res.status(200).json(result);
-  } catch (err) {
-    res.status(404).json({ message: err });
-  }
-});
 
 module.exports.general = public_users;

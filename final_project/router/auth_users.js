@@ -43,46 +43,51 @@ regd_users.post("/login", (req, res) => {
 
 // 📌 Task 8: Add or modify a review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  const isbn = req.params.isbn;
-  const review = req.query.review;  // review comes from query string
-  const username = req.session.authorization.username;
+    const isbn = req.params.isbn;
+    const review = req.query.review;
+    const username = req.user.username; // ✅ get from decoded JWT
+  
+    if (!books[isbn]) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+  
+    if (!review) {
+      return res.status(400).json({ message: "Review is required" });
+    }
+  
+    if (!books[isbn].reviews) {
+      books[isbn].reviews = {};
+    }
+  
+    books[isbn].reviews[username] = review;
+  
+    return res.status(200).json({
+      message: "Review added/updated successfully",
+      reviews: books[isbn].reviews
+    });
+  });
+  
 
-  if (!books[isbn]) {
-    return res.status(404).json({ message: "Book not found" });
-  }
 
-  if (!review) {
-    return res.status(400).json({ message: "Review is required" });
-  }
-
-  // ensure reviews object exists
-  if (!books[isbn].reviews) {
-    books[isbn].reviews = {};
-  }
-
-  // add or modify review
-  books[isbn].reviews[username] = review;
-
-  return res.status(200).json({ message: "Review added/updated successfully", reviews: books[isbn].reviews });
-});
-
-
-// 📌 Task 9: Delete a review
-regd_users.delete("/auth/review/:isbn", (req, res) => {
-  const isbn = req.params.isbn;
-  const username = req.session.authorization.username;
-
-  if (!books[isbn]) {
-    return res.status(404).json({ message: "Book not found" });
-  }
-
-  if (books[isbn].reviews && books[isbn].reviews[username]) {
-    delete books[isbn].reviews[username];
-    return res.status(200).json({ message: "Review deleted successfully", reviews: books[isbn].reviews });
-  } else {
-    return res.status(404).json({ message: "No review found for this user" });
-  }
-});
+  regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const isbn = req.params.isbn;
+    const username = req.user.username; // ✅ from JWT
+  
+    if (!books[isbn]) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+  
+    if (books[isbn].reviews && books[isbn].reviews[username]) {
+      delete books[isbn].reviews[username];
+      return res.status(200).json({
+        message: "Review deleted successfully",
+        reviews: books[isbn].reviews
+      });
+    } else {
+      return res.status(404).json({ message: "No review found for this user" });
+    }
+  });
+  
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
